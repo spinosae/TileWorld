@@ -22,7 +22,7 @@ public class Parameters {
 
     //Agent Parameters
     public static final int defaultFuelLevel = 1000;
-    public static final int defaultSensorRange = 3;
+    public static final int defaultSensorRange = 2;
 
     //Environment Parameters
     public static final int xDimension = 100; //size in cells
@@ -35,6 +35,6 @@ public class Parameters {
     public static final double tileDev = 0.05f;
     public static final double holeDev = 0.05f;
     public static final double obstacleDev = 0.05f;
-    public static final int lifeTime = 30;
+    public static final int lifeTime = 100;
 
 }

@@ -29,6 +29,11 @@ public class ReactiveAgent extends TWAgent {
 	private Random randomGenerator = new Random();
 	private PatrolPath pp;
 	private PatrolPoint nextp;
+	private int tiles = 0;
+
+	public int getTileNum() {
+		return this.carriedTiles.size();
+	}
 
 	public enum PathFor {
 		FUEL, TILE, HOLE, NONE, RANDOM, PATROL
@@ -41,16 +46,28 @@ public class ReactiveAgent extends TWAgent {
 		super(xpos, ypos, env, fuelLevel);
 		this.id = id;
 		if (id == 1) {
-			pp = new PatrolPath(new PatrolPoint(Parameters.defaultSensorRange,
+			pp = new PatrolPath(new PatrolPoint(Parameters.defaultSensorRange, env.getyDimension()/2));
+			pp.addPoint(new PatrolPoint(Parameters.defaultSensorRange,
 					env.getyDimension() - Parameters.defaultSensorRange));
+			pp.addPoint(new PatrolPoint(env.getxDimension()/2,
+					env.getyDimension() - Parameters.defaultSensorRange));
+			
 		} else {
-			pp = new PatrolPath(new PatrolPoint(env.getxDimension()
+			pp = new PatrolPath(new PatrolPoint(env.getxDimension()/2,
+					Parameters.defaultSensorRange));
+			pp.addPoint(new PatrolPoint(env.getxDimension()
 					- Parameters.defaultSensorRange,
 					Parameters.defaultSensorRange));
+			pp.addPoint(new PatrolPoint(env.getxDimension()
+					- Parameters.defaultSensorRange,
+					env.getyDimension()/2));
 		}
+		
 		pp.addPoint(new PatrolPoint(env.getxDimension()
 				- Parameters.defaultSensorRange, env.getyDimension()
 				- Parameters.defaultSensorRange));
+		pp.addPoint(new PatrolPoint(env.getxDimension()/2, env.getyDimension()/2));
+
 		pp.addPoint(new PatrolPoint(Parameters.defaultSensorRange,
 				Parameters.defaultSensorRange));
 		this.nextp = pp.nextPoint();
@@ -112,7 +129,9 @@ public class ReactiveAgent extends TWAgent {
 			break;
 		default:
 			break;
+
 		}
+		this.tiles = this.carriedTiles.size();
 	}
 
 	@Override
@@ -137,8 +156,8 @@ public class ReactiveAgent extends TWAgent {
 
 		ObjectGrid2D objectGrid = this.getMemory().getMemoryGrid();
 		TWEntity e = (TWEntity) objectGrid.get(this.getX(), this.getY());
-		System.out.println("object on current location: " + e);
-		System.out.println("at fuel station:" + this.atFuelStation());
+//		System.out.println("object on current location: " + e);
+//		System.out.println("at fuel station:" + this.atFuelStation());
 		if (e != null && (e instanceof TWTile)) {
 			act = TWAction.PICKUP;
 			System.out.println("PICKUP");
@@ -153,6 +172,7 @@ public class ReactiveAgent extends TWAgent {
 			act = TWAction.MOVE;
 			dir = this.toFuel();
 		}
+		System.out.println(" ");
 		return new TWThought(act, dir);
 	}
 
@@ -235,12 +255,12 @@ public class ReactiveAgent extends TWAgent {
 				if (this.path != null && this.path.hasNext()) {
 					dir = path.popNext().getDirection();
 				} else {
-					 dir = this.wander();
-//					dir = this.patrol();
+//					dir = this.wander();
+					 dir = this.patrol();
 				}
 			} else {
-				 dir = this.wander();
-//				dir = this.patrol();
+//				dir = this.wander();
+				 dir = this.patrol();
 			}
 		}
 		return dir;
@@ -250,7 +270,7 @@ public class ReactiveAgent extends TWAgent {
 		Int2D goal = null;
 		TWDirection dir = null;
 		// TWDirection dir = this.getRandomDirection();
-		System.out.println("Wandering");
+		System.out.println("wandering");
 		if (this.path != null && pathFor == PathFor.RANDOM) {
 			dir = path.popNext().getDirection();
 		} else {
@@ -275,15 +295,14 @@ public class ReactiveAgent extends TWAgent {
 	private TWDirection patrol() {
 		TWDirection dir = null;
 		// TWDirection dir = this.getRandomDirection();
-		System.out.println("Patroling");
-		if (java.lang.Math.abs(this.getX()-nextp.getX()) < 3 && java.lang.Math.abs(this.getY()-nextp.getY()) < 3){
+		System.out.println("patroling");
+		if (java.lang.Math.abs(this.getX() - nextp.getX()) < 3
+				&& java.lang.Math.abs(this.getY() - nextp.getY()) < 3) {
 			nextp = this.pp.nextPoint();
 		}
 		if (this.path != null && pathFor == PathFor.PATROL) {
 			dir = path.popNext().getDirection();
 		} else {
-			
-//			nextp = this.pp.getPps().get(1);
 			this.pathFor = PathFor.PATROL;
 			this.path = pathGenerator.findPath(this.getX(), this.getY(),
 					nextp.getX(), nextp.getY());
@@ -291,9 +310,10 @@ public class ReactiveAgent extends TWAgent {
 				dir = path.popNext().getDirection();
 			} else {
 				dir = this.getRandomDirection();
+				System.out.println("wandering " + dir);
 				while (this.getMemory().isCellBlocked(this.getX() + dir.dx,
 						this.getY() + dir.dy)) {
-					System.out.println("Wandering");
+					System.out.println("wandering " + dir);
 					dir = this.getRandomDirection();
 				}
 			}
@@ -309,7 +329,7 @@ public class ReactiveAgent extends TWAgent {
 	private TWDirection getRandomDirection() {
 
 		TWDirection randomDir = TWDirection.values()[this.getEnvironment().random
-				.nextInt(5)];
+				.nextInt(4)];
 
 		if (this.getX() >= this.getEnvironment().getxDimension() - 1) {
 			randomDir = TWDirection.W;
