@@ -309,13 +309,14 @@ public class ReactiveAgent extends TWAgent {
 			if (this.path != null) {
 				dir = path.popNext().getDirection();
 			} else {
-				dir = this.getRandomDirection();
-				System.out.println("wandering " + dir);
-				while (this.getMemory().isCellBlocked(this.getX() + dir.dx,
-						this.getY() + dir.dy)) {
-					System.out.println("wandering " + dir);
-					dir = this.getRandomDirection();
-				}
+//				dir = this.getRandomDirection();
+//				System.out.println("wandering " + dir);
+//				while (this.getMemory().isCellBlocked(this.getX() + dir.dx,
+//						this.getY() + dir.dy)) {
+//					System.out.println("wandering " + dir);
+//					dir = this.getRandomDirection();
+//				}
+				dir = this.wander();
 			}
 		}
 		return dir;
