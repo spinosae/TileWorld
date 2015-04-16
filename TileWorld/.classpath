@@ -2,5 +2,13 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/bsh-2.0b4.jar"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/itext-1.2.jar"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/jcommon-1.0.21.jar"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/jfreechart-1.0.17.jar"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/jmf.jar"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/MASON_14.jar"/>
+	<classpathentry kind="lib" path="C:/eclipse/external/TileWorld/portfolio.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/Java3D/1.5.2/lib/ext/j3dcore.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
