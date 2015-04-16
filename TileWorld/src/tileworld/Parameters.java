@@ -17,16 +17,16 @@ package tileworld;
 public class Parameters {
 
     //Simulation Parameters
-    public final static int seed = 4162012; //no effect with gui
+    public final static int seed = 40462015; //no effect with gui
     public static final long endTime = 5000; //no effect with gui
 
     //Agent Parameters
-    public static final int defaultFuelLevel = 50000;
+    public static final int defaultFuelLevel = 1000;
     public static final int defaultSensorRange = 3;
 
     //Environment Parameters
-    public static final int xDimension = 50; //size in cells
-    public static final int yDimension = 50;
+    public static final int xDimension = 100; //size in cells
+    public static final int yDimension = 100;
 
     //Object Parameters
     public static final double tileMean = 0.2;
@@ -35,6 +35,6 @@ public class Parameters {
     public static final double tileDev = 0.05f;
     public static final double holeDev = 0.05f;
     public static final double obstacleDev = 0.05f;
-    public static final int lifeTime = 500;
+    public static final int lifeTime = 30;
 
 }

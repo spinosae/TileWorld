@@ -5,6 +5,7 @@ package tileworld.environment;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import sim.engine.SimState;
 import sim.engine.Steppable;
 import sim.field.grid.ObjectGrid2D;
@@ -12,6 +13,7 @@ import sim.util.Bag;
 import sim.util.Int2D;
 import tileworld.Parameters;
 import tileworld.TWGUI;
+import tileworld.agent.ReactiveAgent;
 import tileworld.agent.SimpleTWAgent;
 import tileworld.agent.TWAgent;
 
@@ -96,7 +98,8 @@ public class TWEnvironment extends SimState implements Steppable {
         schedule.scheduleRepeating(this, 1, 1.0);
         
         //Now we create some agents
-        createAgent(new SimpleTWAgent(10, 1, this, Parameters.defaultFuelLevel),2);
+        createAgent(new SimpleTWAgent(0, 0, this, Parameters.defaultFuelLevel),2);
+//        createAgent(new ReactiveAgent(1, 1, 2, this, Parameters.defaultFuelLevel),3);
 //      createAgent(new VaisaghAgent(10, 1, this, Parameters.defaultFuelLevel),3);
 
         

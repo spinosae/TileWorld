@@ -108,7 +108,7 @@ public class TWAgentWorkingMemory {
 
         //must all be same size.
         assert (sensedObjects.size() == objectXCoords.size() && sensedObjects.size() == objectYCoords.size());
-
+//        this.memoryGrid.clear();
 //        me.getEnvironment().getMemoryGrid().clear();  // THis is equivalent to only having sensed area in memory
 //       this.decayMemory();       // You might want to think about when to call the decay function as well.
         for (int i = 0; i < sensedObjects.size(); i++) {
@@ -188,6 +188,7 @@ public class TWAgentWorkingMemory {
 
     public void removeAgentPercept(int x, int y){
         objects[x][y] = null;
+        this.memoryGrid.set(x, y, null);
     }
 
 
