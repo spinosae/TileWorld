@@ -97,7 +97,6 @@ public class TWGUI extends GUIState {
         // tell the portrayals what to portray and how to portray them
         objectGridPortrayal.setField(((TWEnvironment) state).getObjectGrid());
 
-
         agentGridPortrayal.setField(((TWEnvironment) state).getAgentGrid());
 
         agentGridPortrayal.setPortrayalForClass(TWAgent.class, TWAgent.getPortrayal());

@@ -8,6 +8,9 @@ package tileworld.agent;
 import tileworld.environment.TWDirection;
 import tileworld.environment.TWEnvironment;
 import tileworld.exceptions.CellBlockedException;
+import tileworld.planners.AstarPathGenerator;
+import tileworld.planners.TWPath;
+import tileworld.planners.TWPathGenerator;
 
 /**
  * TWContextBuilder
@@ -29,7 +32,9 @@ public class SimpleTWAgent extends TWAgent{
 
     protected TWThought think() {
 //        getMemory().getClosestObjectInSensorRange(Tile.class);
-          System.out.println("Simple Score: " + this.score);
+    	TWPathGenerator astar = new AstarPathGenerator(this.getEnvironment(), this, 20);
+    	TWPath path =  astar.findPath(1, 50, 0, 48);
+    	System.out.println("path: " + path);
         return new TWThought(TWAction.MOVE,getRandomDirection());
     }
 
