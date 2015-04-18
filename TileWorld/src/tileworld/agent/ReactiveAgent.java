@@ -2,7 +2,6 @@ package tileworld.agent;
 
 import sim.field.grid.ObjectGrid2D;
 import sim.util.Int2D;
-import tileworld.Parameters;
 import tileworld.environment.TWDirection;
 import tileworld.environment.TWEntity;
 import tileworld.environment.TWEnvironment;
@@ -13,6 +12,7 @@ import tileworld.exceptions.CellBlockedException;
 import tileworld.exceptions.InsufficientFuelException;
 import tileworld.planners.AstarPathGenerator;
 import tileworld.planners.PatrolPath;
+import tileworld.planners.PatrolPath.Shape;
 import tileworld.planners.PatrolPoint;
 import tileworld.planners.TWPath;
 import tileworld.planners.TWPathGenerator;
@@ -40,15 +40,20 @@ public class ReactiveAgent extends TWAgent {
 			this.getEnvironment(), this, 100);
 	private static final Logger LOGGER = Logger
 			.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	private long startTime;
 	private int FUEL_LOW = 50;
 	private int SEARCH_DEPTH = 20;
 	private int FUEL_CRITICAL = 15;
 	private int TIME_THRES = 20;
 	private int DIST_THRES = 3;
-	
+	private int TILE_CAP = 3;
 
 	public int getTileNum() {
 		return this.carriedTiles.size();
+	}
+
+	public boolean canCarry() {
+		return this.carriedTiles.size() < TILE_CAP;
 	}
 
 	public enum PathFor {
@@ -62,13 +67,14 @@ public class ReactiveAgent extends TWAgent {
 		this.setPatrol();
 		this.FUEL_LOW = (env.getxDimension() + env.getyDimension()) / 4;
 		this.SEARCH_DEPTH = env.getxDimension() + env.getyDimension();
-		this.DIST_THRES = Parameters.defaultSensorRange;
+		this.DIST_THRES = this.sensor.sensorRange;
+		startTime = System.nanoTime();
 		LOGGER.setLevel(Level.INFO);
 	}
 
 	private void setPatrol() {
 		TWEnvironment env = this.getEnvironment();
-		int dev = Parameters.defaultSensorRange, xmax = env.getxDimension(), ymax = env
+		int dev = this.sensor.sensorRange, xmax = env.getxDimension(), ymax = env
 				.getyDimension();
 		// PatrolPoint p1 = new PatrolPoint(dev, ymax / 2);
 		// PatrolPoint p3 = new PatrolPoint(xmax / 2, ymax - dev);
@@ -77,31 +83,45 @@ public class ReactiveAgent extends TWAgent {
 		PatrolPoint p1 = new PatrolPoint(dev, ymax - dev);
 		PatrolPoint p2 = new PatrolPoint(xmax - 3 * dev, ymax - dev);
 		PatrolPoint p3 = new PatrolPoint(dev, dev);
-		PatrolPoint p4 = PatrolPoint.midPoint(p3, p1);
-		PatrolPoint p5 = PatrolPoint.midPoint(p2, p3);
-		PatrolPoint p6 = PatrolPoint.midPoint(p1, p2);
+		// PatrolPoint p4 = PatrolPoint.midPoint(p3, p1);
+		// PatrolPoint p5 = PatrolPoint.midPoint(p2, p3);
+		// PatrolPoint p6 = PatrolPoint.midPoint(p1, p2);
 
 		PatrolPoint pp1 = new PatrolPoint(xmax - dev, dev);
 		PatrolPoint pp2 = new PatrolPoint(xmax - dev, ymax - dev);
 		PatrolPoint pp3 = new PatrolPoint(3 * dev, dev);
-		PatrolPoint pp4 = PatrolPoint.midPoint(pp3, pp1);
-		PatrolPoint pp5 = PatrolPoint.midPoint(pp2, pp3);
-		PatrolPoint pp6 = PatrolPoint.midPoint(pp1, pp2);
+//		PatrolPoint pp4 = PatrolPoint.midPoint(pp3, pp1);
+//		PatrolPoint pp5 = PatrolPoint.midPoint(pp2, pp3);
+//		PatrolPoint pp6 = PatrolPoint.midPoint(pp1, pp2);
 
-		PatrolPoint[] p1p = { p4, p5, p1, p4, p6, p2, p5, p6, p1, p5, p3 };
-		PatrolPoint[] p2p = { pp4, pp5, pp1, pp4, pp6, pp2, pp5, pp6, pp1, pp5,
-				pp3 };
-		if (id == 1) {
-			pp = new PatrolPath(p1p);// 1
+		// PatrolPoint[] p1p = { p4, p5, p1, p4, p6, p2, p5, p6, p1, p5, p3 };
+//		PatrolPoint[] p2p = { pp4, pp5, pp1, pp4, pp6, pp2, pp5, pp6, pp1, pp5,
+//				pp3 };
+//		PatrolPoint[] p1p = { p1, p2, p3 };
+//		 PatrolPoint[] p2p = { pp1, pp2,pp3 };
+		if (id % 2 == 1) {
+//			pp = new PatrolPath(p1p);// 1
+			 pp = new PatrolPath(p3,p1,p3,p2);// 1
+			 pp.autoPath(3, Shape.ZIGZAG);
 		} else {
-			pp = new PatrolPath(p2p);// 1
+//			pp = new PatrolPath(p2p);// 1
+			 pp = new PatrolPath(pp3,pp1,pp3,pp2);// 1
+			 pp.autoPath(3, Shape.STAIR);
+		}
+		for (PatrolPoint p : pp.getPps()) {
+			LOGGER.warning(p.getX() + " " + p.getY());
 		}
 		this.nextp = pp.nextPoint();
 	}
 
 	@Override
 	protected TWThought think() {
-		LOGGER.info("agent " + id + " score: " + this.score);
+		if (this.getX() > this.getEnvironment().getxDimension()
+				|| this.getY() > this.getEnvironment().getyDimension()) {
+			LOGGER.warning("out of border");
+		}
+		LOGGER.info("agent " + id + " score: " + this.score + " at " + this.getX() + " " + this.getY());
+		LOGGER.info("runtime: " + (int)((System.nanoTime() - startTime)/1000000));
 		return this.react();
 	}
 
@@ -177,7 +197,7 @@ public class ReactiveAgent extends TWAgent {
 		TWEntity e = (TWEntity) objectGrid.get(this.getX(), this.getY());
 		// LOGGER.info("object on current location: " + e.getClass());
 		// LOGGER.info("at fuel station:" + this.atFuelStation());
-		if (e != null && (e instanceof TWTile)) {
+		if (this.canCarry() && e != null && (e instanceof TWTile)) {
 			act = TWAction.PICKUP;
 			LOGGER.info("Action: PICKUP");
 		} else if (e != null && (e instanceof TWHole) && this.hasTile()) {
@@ -213,33 +233,13 @@ public class ReactiveAgent extends TWAgent {
 						+ this.getY()
 						+ " to "
 						+ java.lang.Math.max(tf.getX(), this.getX()
-								- Parameters.defaultSensorRange)
+								- this.sensor.sensorRange)
 						+ " "
 						+ java.lang.Math.max(tf.getY(), this.getY()
-								- Parameters.defaultSensorRange));
+								- this.sensor.sensorRange));
 				TWPath lpath = new AstarPathGenerator(this.getEnvironment(),
 						this, SEARCH_DEPTH).findPath(this.getX(), this.getY(),
 						0, 0);
-//				if (lpath == null){
-//				lpath = new AstarPathGenerator(this.getEnvironment(),
-//						this, SEARCH_DEPTH).findPath(
-//						this.getX(),
-//						this.getY(),
-//						java.lang.Math.max(tf.getX(), this.getX()
-//								- Parameters.defaultSensorRange),
-//						java.lang.Math.max(tf.getY(), this.getY()
-//								- Parameters.defaultSensorRange));
-//				}
-//				if (lpath == null){
-//					lpath = new AstarPathGenerator(this.getEnvironment(),
-//							this, SEARCH_DEPTH).findPath(
-//							this.getX(),
-//							this.getY(),
-//							java.lang.Math.max(tf.getX(), this.getX()
-//									- Parameters.defaultSensorRange),
-//							java.lang.Math.max(tf.getY(), this.getY()
-//									- Parameters.defaultSensorRange));
-//					}
 				if (lpath != null && lpath.hasNext()) {
 					this.path = lpath;
 					this.pathFor = PathFor.FUEL;
@@ -270,7 +270,7 @@ public class ReactiveAgent extends TWAgent {
 					+ this.path.getpath().getLast().getX());
 			dir = path.popNext().getDirection();
 		} else {
-			if (!this.hasTile()) {
+			if (!this.hasTile() && this.canCarry()) {
 				LOGGER.info("	looking for tile");
 				goal = this.getMemory().getNearbyTile(this.getX(), this.getY(),
 						TIME_THRES);
@@ -278,7 +278,7 @@ public class ReactiveAgent extends TWAgent {
 				LOGGER.info("	looking for hole");
 				goal = this.getMemory().getNearbyHole(this.getX(), this.getY(),
 						TIME_THRES);
-				if (goal == null) {
+				if (goal == null && this.canCarry()) {
 					LOGGER.info("	looking for tile");
 					goal = this.getMemory().getNearbyTile(this.getX(),
 							this.getY(), TIME_THRES);
@@ -369,11 +369,11 @@ public class ReactiveAgent extends TWAgent {
 						this.getY() + dir.dy)) {
 					LOGGER.info("	random walking: " + dir);
 					dir = this.getRandomDirection();
-					if (count>10){
+					if (count > 10) {
 						dir = TWDirection.Z;
 						break;
 					}
-					count ++;
+					count++;
 				}
 			}
 		}
@@ -417,7 +417,7 @@ public class ReactiveAgent extends TWAgent {
 						- xthres);
 		int ythres = (int) ((double) gx / this.getEnvironment().getxDimension() * this
 				.getEnvironment().getyDimension());
-		if (id == 1) {
+		if (id % 2 == 1) {
 			gy = ythres
 					+ randomGenerator.nextInt(this.getEnvironment()
 							.getyDimension() - ythres);
