@@ -386,10 +386,10 @@ public class ReactiveAgent extends TWAgent {
 
 		if (id % 2 == 1) {
 			this.pp = new PatrolPath(p3, p1, p3, p2);
-			this.pp.autoPath(3, Shape.ZIGZAG);
+			this.pp.autoPath(3, Shape.CUSTOM);
 		} else {
 			this.pp = new PatrolPath(pp3, pp1, pp3, pp2);
-			this.pp.autoPath(3, Shape.STAIR);
+			this.pp.autoPath(3, Shape.CUSTOM);
 		}
 		for (PatrolPoint p : pp.getPps()) {
 			LOGGER.warning(p.getX() + " " + p.getY());
