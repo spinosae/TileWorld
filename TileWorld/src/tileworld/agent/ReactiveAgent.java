@@ -60,6 +60,17 @@ public class ReactiveAgent extends TWAgent {
 		FUEL, TILE_HOLE, NONE, RANDOM, PATROL
 	}
 
+	/**
+	 * @param xpos
+	 *            initial position of the agent
+	 * @param ypos
+	 * @param id
+	 *            identifier of the agent
+	 * @param env
+	 *            environment
+	 * @param fuelLevel
+	 *            fuel level
+	 */
 	public ReactiveAgent(int xpos, int ypos, int id, TWEnvironment env,
 			double fuelLevel) {
 		super(xpos, ypos, env, fuelLevel);
@@ -72,57 +83,17 @@ public class ReactiveAgent extends TWAgent {
 		LOGGER.setLevel(Level.INFO);
 	}
 
-	private void setPatrol() {
-		TWEnvironment env = this.getEnvironment();
-		int dev = this.sensor.sensorRange, xmax = env.getxDimension(), ymax = env
-				.getyDimension();
-		// PatrolPoint p1 = new PatrolPoint(dev, ymax / 2);
-		// PatrolPoint p3 = new PatrolPoint(xmax / 2, ymax - dev);
-		// PatrolPoint p5 = new PatrolPoint(xmax / 2 - 2 * dev, ymax / 2 + 2 *
-		// dev);
-		PatrolPoint p1 = new PatrolPoint(dev, ymax - dev);
-		PatrolPoint p2 = new PatrolPoint(xmax - 3 * dev, ymax - dev);
-		PatrolPoint p3 = new PatrolPoint(dev, dev);
-		// PatrolPoint p4 = PatrolPoint.midPoint(p3, p1);
-		// PatrolPoint p5 = PatrolPoint.midPoint(p2, p3);
-		// PatrolPoint p6 = PatrolPoint.midPoint(p1, p2);
-
-		PatrolPoint pp1 = new PatrolPoint(xmax - dev, dev);
-		PatrolPoint pp2 = new PatrolPoint(xmax - dev, ymax - dev);
-		PatrolPoint pp3 = new PatrolPoint(3 * dev, dev);
-//		PatrolPoint pp4 = PatrolPoint.midPoint(pp3, pp1);
-//		PatrolPoint pp5 = PatrolPoint.midPoint(pp2, pp3);
-//		PatrolPoint pp6 = PatrolPoint.midPoint(pp1, pp2);
-
-		// PatrolPoint[] p1p = { p4, p5, p1, p4, p6, p2, p5, p6, p1, p5, p3 };
-//		PatrolPoint[] p2p = { pp4, pp5, pp1, pp4, pp6, pp2, pp5, pp6, pp1, pp5,
-//				pp3 };
-//		PatrolPoint[] p1p = { p1, p2, p3 };
-//		 PatrolPoint[] p2p = { pp1, pp2,pp3 };
-		if (id % 2 == 1) {
-//			pp = new PatrolPath(p1p);// 1
-			 pp = new PatrolPath(p3,p1,p3,p2);// 1
-			 pp.autoPath(3, Shape.ZIGZAG);
-		} else {
-//			pp = new PatrolPath(p2p);// 1
-			 pp = new PatrolPath(pp3,pp1,pp3,pp2);// 1
-			 pp.autoPath(3, Shape.STAIR);
-		}
-		for (PatrolPoint p : pp.getPps()) {
-			LOGGER.warning(p.getX() + " " + p.getY());
-		}
-		this.nextp = pp.nextPoint();
-	}
-
 	@Override
 	protected TWThought think() {
 		if (this.getX() > this.getEnvironment().getxDimension()
 				|| this.getY() > this.getEnvironment().getyDimension()) {
 			LOGGER.warning("out of border");
 		}
-		LOGGER.info("agent " + id + " score: " + this.score + " at " + this.getX() + " " + this.getY());
-		LOGGER.info("runtime: " + (int)((System.nanoTime() - startTime)/1000000));
-		return this.react();
+		LOGGER.info("agent " + id + " score: " + this.score + " at "
+				+ this.getX() + " " + this.getY());
+		LOGGER.info("runtime: "
+				+ (int) ((System.nanoTime() - startTime) / 1000000));
+		return this.handleObjects();
 	}
 
 	@Override
@@ -169,27 +140,12 @@ public class ReactiveAgent extends TWAgent {
 		}
 	}
 
-	@Override
-	public String getName() {
-		// TODO Auto-generated method stub
-		return "Reactive Agent " + this.id;
-	}
-
-	private boolean atFuelStation() {
-		return this.getX() == this.getEnvironment().getFuelingStation().getX()
-				&& this.getY() == this.getEnvironment().getFuelingStation()
-						.getY();
-	}
-
-	private boolean fuelLow() {
-		return this.getFuelLevel() <= this.getX() + this.getY() + FUEL_LOW;
-	}
-
-	private boolean fuelCritical() {
-		return this.getFuelLevel() <= this.getX() + this.getY() + FUEL_CRITICAL;
-	}
-
-	private TWThought react() {
+	/**
+	 * handle object at current location
+	 * 
+	 * @return action to act
+	 */
+	private TWThought handleObjects() {
 		LOGGER.info("agent " + id);
 		TWAction act;
 		TWDirection dir = null;
@@ -215,6 +171,12 @@ public class ReactiveAgent extends TWAgent {
 		return new TWThought(act, dir);
 	}
 
+	/**
+	 * check fuel level and try to get a path back to fuel station when fuel is
+	 * low
+	 * 
+	 * @return direction for next movement
+	 */
 	private TWDirection toFuel() {
 		LOGGER.info("to fuel");
 		TWDirection dir = null;
@@ -227,19 +189,30 @@ public class ReactiveAgent extends TWAgent {
 				dir = path.popNext().getDirection();
 			} else {
 				TWFuelStation tf = this.getEnvironment().getFuelingStation();
-				LOGGER.info("	generating path from: "
-						+ this.getX()
-						+ " "
-						+ this.getY()
-						+ " to "
-						+ java.lang.Math.max(tf.getX(), this.getX()
-								- this.sensor.sensorRange)
-						+ " "
-						+ java.lang.Math.max(tf.getY(), this.getY()
-								- this.sensor.sensorRange));
-				TWPath lpath = new AstarPathGenerator(this.getEnvironment(),
-						this, SEARCH_DEPTH).findPath(this.getX(), this.getY(),
-						0, 0);
+				LOGGER.info("	generating path from: " + this.getX() + " "
+						+ this.getY() + " to  fuel station");
+				TWPath lpath = pathGenerator.findPath(this.getX(), this.getY(),
+						this.getEnvironment().getFuelingStation().getX(), this
+								.getEnvironment().getFuelingStation().getY());
+				if (lpath == null) {
+					lpath = pathGenerator.findPath(
+							this.getX(),
+							this.getY(),
+							java.lang.Math.max(tf.getX(), this.getX()
+									- this.sensor.sensorRange),
+							java.lang.Math.max(tf.getY(), this.getY()
+									- this.sensor.sensorRange));
+					LOGGER.info("	generating path from: "
+							+ this.getX()
+							+ " "
+							+ this.getY()
+							+ " to "
+							+ java.lang.Math.max(tf.getX(), this.getX()
+									- this.sensor.sensorRange)
+							+ " "
+							+ java.lang.Math.max(tf.getY(), this.getY()
+									- this.sensor.sensorRange));
+				}
 				if (lpath != null && lpath.hasNext()) {
 					this.path = lpath;
 					this.pathFor = PathFor.FUEL;
@@ -249,17 +222,22 @@ public class ReactiveAgent extends TWAgent {
 						LOGGER.info("	cannot find a path, waiting");
 						dir = TWDirection.Z;
 					} else {
-						dir = this.find();
+						dir = this.lookForObjects();
 					}
 				}
 			}
 		} else {
-			dir = this.find();
+			dir = this.lookForObjects();
 		}
 		return dir;
 	}
 
-	private TWDirection find() {
+	/**
+	 * look for tiles and holes in the neighborhood
+	 * 
+	 * @return direction for next movement
+	 */
+	private TWDirection lookForObjects() {
 		LOGGER.info("find");
 		TWEntity goal = null;
 		TWDirection dir = null;
@@ -308,6 +286,11 @@ public class ReactiveAgent extends TWAgent {
 		return dir;
 	}
 
+	/**
+	 * move the agent according to the patrol path
+	 * 
+	 * @return direction for next movement
+	 */
 	private TWDirection patrol() {
 		TWDirection dir = null;
 		LOGGER.info("patroling");
@@ -337,6 +320,11 @@ public class ReactiveAgent extends TWAgent {
 		return dir;
 	}
 
+	/**
+	 * move randomly
+	 * 
+	 * @return direction for next movement
+	 */
 	private TWDirection wander() {
 		LOGGER.info("wander");
 		Int2D goal = null;
@@ -380,34 +368,40 @@ public class ReactiveAgent extends TWAgent {
 		return dir;
 	}
 
-	private TWDirection getRandomDirection() {
+	/**
+	 * set patrol points for the agent
+	 */
+	private void setPatrol() {
+		TWEnvironment env = this.getEnvironment();
+		int dev = this.sensor.sensorRange, xmax = env.getxDimension(), ymax = env
+				.getyDimension();
 
-		TWDirection randomDir = TWDirection.values()[this.getEnvironment().random
-				.nextInt(4)];
-		while ((this.getX() + randomDir.dx) < 0
-				|| (this.getX() + randomDir.dx) > (this.getEnvironment()
-						.getxDimension() - 1)
-				|| (this.getY() + randomDir.dy) < 0
-				|| (this.getY() + randomDir.dy) > (this.getEnvironment()
-						.getyDimension() - 1)) {
-			randomDir = TWDirection.values()[this.getEnvironment().random
-					.nextInt(4)];
+		PatrolPoint p1 = new PatrolPoint(dev, ymax - dev);
+		PatrolPoint p2 = new PatrolPoint(xmax - 3 * dev, ymax - dev);
+		PatrolPoint p3 = new PatrolPoint(dev, dev);
+
+		PatrolPoint pp1 = new PatrolPoint(xmax - dev, dev);
+		PatrolPoint pp2 = new PatrolPoint(xmax - dev, ymax - dev);
+		PatrolPoint pp3 = new PatrolPoint(3 * dev, dev);
+
+		if (id % 2 == 1) {
+			this.pp = new PatrolPath(p3, p1, p3, p2);
+			this.pp.autoPath(3, Shape.ZIGZAG);
+		} else {
+			this.pp = new PatrolPath(pp3, pp1, pp3, pp2);
+			this.pp.autoPath(3, Shape.STAIR);
 		}
-		// if (this.getX() >= this.getEnvironment().getxDimension() - 1) {
-		// randomDir = TWDirection.W;
-		// } else if (this.getX() <= 0) {
-		// randomDir = TWDirection.E;
-		// } else if (this.getY() <= 0) {
-		// randomDir = TWDirection.S;
-		// } else if (this.getY() >= this.getEnvironment().getxDimension() - 1)
-		// {
-		// randomDir = TWDirection.N;
-		// }
-
-		return randomDir;
-
+		for (PatrolPoint p : pp.getPps()) {
+			LOGGER.warning(p.getX() + " " + p.getY());
+		}
+		this.nextp = pp.nextPoint();
 	}
 
+	/**
+	 * get random location in own half of the world
+	 * 
+	 * @return
+	 */
 	private Int2D getRandomLocation() {
 		int gx = 1, gy = 1;
 		int xthres = (int) (0 * this.getEnvironment().getxDimension());
@@ -426,5 +420,59 @@ public class ReactiveAgent extends TWAgent {
 					- ythres);
 		}
 		return new Int2D(gx, gy);
+	}
+
+	/**
+	 * get random direction for next movement
+	 * 
+	 * @return one of the directions N, W, E, S
+	 */
+	private TWDirection getRandomDirection() {
+
+		TWDirection randomDir = TWDirection.values()[this.getEnvironment().random
+				.nextInt(4)];
+		while ((this.getX() + randomDir.dx) < 0
+				|| (this.getX() + randomDir.dx) > (this.getEnvironment()
+						.getxDimension() - 1)
+				|| (this.getY() + randomDir.dy) < 0
+				|| (this.getY() + randomDir.dy) > (this.getEnvironment()
+						.getyDimension() - 1)) {
+			randomDir = TWDirection.values()[this.getEnvironment().random
+					.nextInt(4)];
+		}
+		return randomDir;
+	}
+
+	/**
+	 * check whether at fuel station
+	 * 
+	 * @return true or false
+	 */
+	private boolean atFuelStation() {
+		return this.getX() == this.getEnvironment().getFuelingStation().getX()
+				&& this.getY() == this.getEnvironment().getFuelingStation()
+						.getY();
+	}
+
+	/**
+	 * check whether fuel is low
+	 * @return true or false
+	 */
+	private boolean fuelLow() {
+		return this.getFuelLevel() <= this.getX() + this.getY() + FUEL_LOW;
+	}
+	
+	/**
+	 * check whether fuel is critical
+	 * @return true or false
+	 */
+	private boolean fuelCritical() {
+		return this.getFuelLevel() <= this.getX() + this.getY() + FUEL_CRITICAL;
+	}
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return "Reactive Agent " + this.id;
 	}
 }
